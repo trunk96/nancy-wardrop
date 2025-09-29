@@ -26,11 +26,11 @@ def run_simulation(
         else:
             sensors.append(WardropBalancer(server_names, 
                                            sensor_id=i,
-                                           dt=0.01,
-                                           lambda_i = sensor_lambdas[i]))
+                                           dt=0.01))
         x_p_s1 += sensors[i].rates['srv1']*sensor_lambdas[i]
         x_p_s2 += sensors[i].rates['srv2']*sensor_lambdas[i]
-        
+        print(f"Sensor {i} rates: {sensors[i].rates}")
+    print(f"Initial load on servers: \n 1: {x_p_s1}\t 2: {x_p_s2}")
     
     lat1 = x_p_s1/capacity_server1       
     lat2 = x_p_s2/capacity_server2
@@ -53,6 +53,7 @@ def run_simulation(
         for s in sensors:
             
             # dati generati da questo sensore nello step
+            # data_generated = sensor_lambdas[s.sensor_id]
             data_generated = np.random.randint(10, 50)
             
             # se è Wardrop, usa rates
@@ -65,8 +66,8 @@ def run_simulation(
                 #print(f"Step: {step}  -  Server #1: {rate_srv1:.3f}  -  Server #2: {rate_srv2:.3f}")
                 #time.sleep(1)
                 
-                x_p_s1 += rate_srv1*s.get_lambda()
-                x_p_s2 += rate_srv2*s.get_lambda()
+                x_p_s1 += rate_srv1*data_generated
+                x_p_s2 += rate_srv2*data_generated
                 
             # se è simple, usa probabilità
             else:
@@ -121,3 +122,4 @@ if __name__ == "__main__":
     plt.title("Latency Evolution - Wardrop Balancer")
     plt.legend()
     plt.grid('on')
+    plt.show()

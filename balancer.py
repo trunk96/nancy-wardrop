@@ -25,14 +25,13 @@ class SimpleBalancer(Balancer):
 
 
 class WardropBalancer(Balancer):
-    def __init__(self, server_names, sensor_id=None, server_rates=None, dt=0.01, lambda_i=10, sigma=0.05, epsilon=1e-3, delta=1e-3):
+    def __init__(self, server_names, sensor_id=None, server_rates=None, dt=0.01, sigma=0.05, epsilon=1e-3, delta=1e-3):
         """
         Initializes the balancer with server configuration and algorithm parameters.
         Args:
             server_names (list): List of server names to balance requests across.
             sensor_id (Any, optional): Identifier for the sensor associated with this balancer.
             dt (float, optional): Time step for the balancing algorithm, in seconds. Default is 0.01.
-            lambda_i (float, optional): Cumulative request rate of the commodity i which this sensor belongs to (requests per second). Default is 10.
             sigma (float, optional): Parameter deciding the velocity of the Wardrop algorithm in converging to the equilibrium 
                 (if too high it may cause instability). Default is 0.05.
             epsilon (float, optional): Small constant to decide when two latencies are considered equal. Default is 1e-3.
@@ -47,7 +46,6 @@ class WardropBalancer(Balancer):
             for serv in server_names:
                 self.rates[serv] = 1.0 / len(server_names)
         self.dt = dt
-        self.lambda_i = lambda_i # req/s
         self.sigma = sigma
         self.epsilon = epsilon
         self.delta = delta
@@ -60,7 +58,7 @@ class WardropBalancer(Balancer):
         epsilon = epsilon if epsilon is not None else self.epsilon
         delta = delta if delta is not None else self.delta
 
-        if (l_i - l_j > epsilon) and (x_pki > delta*self.lambda_i):
+        if (l_i - l_j > epsilon) and (x_pki > delta):
             return sigma * x_pki
         else:
             return 0.0       
@@ -84,6 +82,15 @@ class WardropBalancer(Balancer):
             # Ensure rates are non-negative, even if it should not happen in any case
             if self.rates[self.server_names[i]] < 0:
                 self.rates[self.server_names[i]] = 0
+        # Normalize rates to ensure they sum to 1 and are within [0,1] (probabilities)
+        total = sum(self.rates.values())
+        if total > 0:
+            for srv in self.server_names:
+                self.rates[srv] = max(0.0, self.rates[srv] / total)
+        else:
+            # If total is zero, assign equal probability to each server
+            for srv in self.server_names:
+                self.rates[srv] = 1.0 / len(self.server_names)
         return self.rates
 
             
